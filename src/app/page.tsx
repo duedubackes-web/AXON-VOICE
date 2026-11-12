@@ -1,3 +1,4 @@
+import AgentChat from "@/components/AgentChat";
 "use client";
 import {useEffect,useRef,useState} from "react";
 import {AudioLines,Play,Pause,Download,Volume2,Mic2,SlidersHorizontal,Globe2,ShieldCheck,Sparkles,ArrowRight,Loader2} from "lucide-react";
@@ -73,5 +74,6 @@ export default function Home(){
     <footer>AXON VOICE © 2026 <span>Originalidade vocal • Segurança • Diversidade cultural</span></footer>
    </div>
   </section>
+  <AgentChat onUseText={setText}/>
  </main>;
 }

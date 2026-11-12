@@ -1,5 +1,5 @@
-import AgentChat from "@/components/AgentChat";
 "use client";
+import AgentChat from "@/components/AgentChat";
 import {useEffect,useRef,useState} from "react";
 import {AudioLines,Play,Pause,Download,Volume2,Mic2,SlidersHorizontal,Globe2,ShieldCheck,Sparkles,ArrowRight,Loader2} from "lucide-react";
 import {regions,emotions,type Emotion,type RegionKey} from "@/lib/regions";

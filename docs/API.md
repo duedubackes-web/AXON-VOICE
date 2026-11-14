@@ -53,3 +53,9 @@ PUT exige a revisão atual e a lista completa de posts com plataforma, título e
 POST `/api/jobs` e `/api/campaigns` aceitam `sceneImageIds`, uma lista com um UUID por cena ou `null` para fundo gráfico. A quantidade deve corresponder ao plano reconstruído. Os IDs precisam existir na biblioteca. POST `/api/campaigns/:id/cut` devolve os IDs de imagens correspondentes às cenas desse corte.
 
 `GET /api/capabilities` informa `imageLibrary` e `maxImageBytes`. Limites e comportamento: [biblioteca de mídia](MEDIA_LIBRARY.md).
+
+## Acessos e briefs 0.5
+
+O catálogo `/api/integrations` inclui `access.links`, orientações por etapa e o estado `external-status-not-monitored` para Metricool/Runway: o servidor AXON não monitora as conexões da conversa.
+
+GET `/api/campaigns/:id/brief/runway` e GET `/api/campaigns/:id/brief/metricool` baixam textos de trabalho da revisão persistida. Seguem a autenticação do estúdio e não enviam conteúdo ao provedor.

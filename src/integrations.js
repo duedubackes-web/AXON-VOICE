@@ -1,3 +1,4 @@
+import {providerAccess} from './provider-access.js';
 import {lookup as dnsLookup} from 'node:dns/promises';
 import {request} from 'node:https';
 import {isIP} from 'node:net';
@@ -34,4 +35,4 @@ export function createAutomation({env=process.env,lookup=dnsLookup,transport=req
 }
 export function integrationCatalog(automation){return {automaticPublishing:false,integrations:[automation.status(),...[
  ['youtube','YouTube'],['instagram','Instagram'],['tiktok','TikTok'],['linkedin','LinkedIn'],['whatsapp','WhatsApp']
- ].map(([id,name])=>({id,name,status:'export-ready',purpose:'Pacote editorial para revisão e publicação manual',directSocialPublishing:false})),{id:'metricool',name:'Metricool',status:'external-connection-required',purpose:'Gestão social via conexão externa; não integrado ao runtime AXON',directSocialPublishing:false},{id:'runway',name:'Runway',status:'external-connection-required',purpose:'Geração de vídeo via conexão externa; não integrado ao runtime AXON',directSocialPublishing:false}]};}
+ ].map(([id,name])=>({id,name,status:'export-ready',purpose:'Pacote editorial para revisão e publicação manual',directSocialPublishing:false})),{id:'metricool',name:'Metricool',access:providerAccess.metricool,status:'external-status-not-monitored',purpose:'Gestão social via conexão externa; não integrado ao runtime AXON',directSocialPublishing:false},{id:'runway',name:'Runway',access:providerAccess.runway,status:'external-status-not-monitored',purpose:'Geração de vídeo via conexão externa; não integrado ao runtime AXON',directSocialPublishing:false}]};}

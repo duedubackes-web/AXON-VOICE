@@ -1,6 +1,6 @@
 # AXON VOICE
 
-Estúdio audiovisual em português. MVP 0.4: roteiro → cenas com imagens próprias → storyboard MP4 → campanha multirrede, com marca reutilizável e saída para automação.
+Estúdio audiovisual em português. MVP 0.5: roteiro → cenas com imagens próprias → storyboard MP4 → campanha multirrede, com marca reutilizável e saída para automação.
 
 ## Abrir no Codespaces
 
@@ -51,3 +51,5 @@ Veja [base do produto](docs/MVP.md), [pesquisa](docs/RESEARCH.md), [API](docs/AP
 Consulte o [ecossistema](docs/ECOSYSTEM.md) e a [configuração de automação](docs/AUTOMATION.md).
 
 Veja a [biblioteca e composição por cena](docs/MEDIA_LIBRARY.md).
+
+A [central de acessos](docs/PROVIDER_ACCESS.md) reúne cadastro, aplicativos móveis e conexões oficiais de Metricool/Runway. Campanhas oferecem briefs TXT para trabalhar nesses serviços sem envio automático.

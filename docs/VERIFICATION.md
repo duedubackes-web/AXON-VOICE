@@ -1,4 +1,4 @@
-# Verificação — versões 0.2, 0.3 e 0.4
+# Verificação — versões 0.2 a 0.5
 
 Data: 14/11/2026.
 
@@ -33,3 +33,9 @@ Os testes de integração externa usam transporte controlado em teste. Não houv
 20 testes aprovados, nenhum ignorado. A suíte real carrega duas imagens com proporções diferentes, exporta um MP4 vertical e decodifica quadros antes/depois da troca de cena para verificar as cores esperadas. Também valida autorização declarada, deduplicação, recuperação da biblioteca, bloqueio de SVG/identificadores inválidos, proteção de imagens referenciadas e preservação dos IDs em campanhas/cortes.
 
 A interface nova continua sem QA visual neste ambiente. Metricool e Runway não disponibilizaram ferramentas nesta sessão e o catálogo reportou ambos como não instalados. Não houve ação externa nessas contas nem consumo pago. O CI remoto deve confirmar a suíte após o push.
+
+## Versão 0.5 — acessos e materiais de trabalho
+
+22 testes aprovados localmente, nenhum ignorado. Os testes novos verificam o catálogo de URLs HTTPS oficiais, briefs que preservam revisão/estado de rascunho e direções visuais, os downloads HTTP para ambos os provedores e a rejeição de um provedor desconhecido. A interface permanece sem QA visual neste ambiente.
+
+Conexões reais no ChatGPT: consulta de marcas do Metricool retornou ausência de redes vinculadas; whoami do Runway confirmou autenticação com plano Free e sem modelos de vídeo. A visualização de planos foi apresentada, sem compras. Esses resultados não representam testes de postagem, de geração de mídia nem integração de API do servidor AXON.

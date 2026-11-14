@@ -1,3 +1,4 @@
+import {providerBrief} from './provider-access.js';
 import {platforms,csv} from './campaigns.js';
 import {plan} from './planner.js';
 import {assignImages} from './assets.js';
@@ -10,6 +11,8 @@ export async function ecosystemRoutes({req,res,send,json,campaigns,automation,as
  if(req.method==='GET'&&path==='/api/platforms'){send(200,platforms);return true;}
  if(req.method==='GET'&&path==='/api/campaigns'){send(200,campaigns.list());return true;}
  if(req.method==='POST'&&path==='/api/campaigns'){const input=await json(req);let project;try{project=plan(input);}catch(e){e.status=400;throw e;}assignImages(project,input.sceneImageIds);assets.resolveScenes(project);send(201,await campaigns.create(input));return true;}
+ const briefMatch=path?.match(/^\/api\/campaigns\/([0-9a-f-]+)\/brief\/(metricool|runway)$/u);
+ if(req.method==='GET'&&briefMatch){const [,id,provider]=briefMatch;send(200,providerBrief(campaigns.get(id),provider),'text/plain',{'Content-Disposition':`attachment; filename="axon-${provider}-${id}.txt"`});return true;}
  const match=path?.match(/^\/api\/campaigns\/([0-9a-f-]+)(?:\/(approve|dispatch|csv|json|cut))?$/u);if(!match)return false;
  const [,id,action]=match;
  if(req.method==='GET'&&!action){send(200,campaigns.get(id));return true;}

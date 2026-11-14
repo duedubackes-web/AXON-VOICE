@@ -1,0 +1,8 @@
+{
+  "name": "AXON VOICE Studio",
+  "build": {"dockerfile": "Dockerfile"},
+  "remoteUser": "node",
+  "forwardPorts": [3000],
+  "portsAttributes": {"3000": {"label": "AXON VOICE", "onAutoForward": "notify"}},
+  "postCreateCommand": "npm run check && npm test"
+}

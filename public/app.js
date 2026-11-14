@@ -1,3 +1,4 @@
+import {setupMediaLibrary} from '/media-library.js';
 import {setupEcosystem} from '/ecosystem.js';
 const $=id=>document.getElementById(id);
 let project;
@@ -6,8 +7,9 @@ async function save(value){const d=await db;await new Promise((resolve,reject)=>
 async function latest(){const d=await db;return new Promise((resolve,reject)=>{const r=d.transaction('projects').objectStore('projects').get('latest');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});}
 const status=text=>$('status').textContent=text;
 function show(){
+ mediaLibrary.beginScenes();
  $('result').hidden=false;$('projectTitle').textContent=project.title;$('duration').textContent=`${project.scenes.length} cenas · ${project.duration}s estimados`;$('direction').textContent=project.voiceDirection;
- $('scenes').replaceChildren(...project.scenes.map((scene,i)=>{const card=document.createElement('article');const h=document.createElement('h3');h.textContent=`CENA ${i+1} · ${scene.start}s — ${scene.start+scene.duration}s`;const p=document.createElement('p');p.textContent=scene.narration;const label=document.createElement('label');label.textContent='Direção visual';const input=document.createElement('textarea');input.rows=2;input.maxLength=2000;input.value=scene.visualPrompt;input.onchange=async()=>{scene.visualPrompt=input.value;try{await save(project);status('Direção visual salva neste navegador.');}catch{status('Não foi possível salvar. Exporte o projeto para preservar as alterações.');}};label.append(input);card.append(h,p,label);return card;}));
+ $('scenes').replaceChildren(...project.scenes.map((scene,i)=>{const card=document.createElement('article');const h=document.createElement('h3');h.textContent=`CENA ${i+1} · ${scene.start}s — ${scene.start+scene.duration}s`;const p=document.createElement('p');p.textContent=scene.narration;const label=document.createElement('label');label.textContent='Direção visual';const input=document.createElement('textarea');input.rows=2;input.maxLength=2000;input.value=scene.visualPrompt;input.onchange=async()=>{scene.visualPrompt=input.value;try{await save(project);status('Direção visual salva neste navegador.');}catch{status('Não foi possível salvar. Exporte o projeto para preservar as alterações.');}};label.append(input);card.append(h,p,label,mediaLibrary.scenePicker(scene,async()=>{try{await save(project);status('Imagem da cena salva no projeto local.');}catch{status('Não foi possível salvar a seleção. Exporte o projeto JSON.');}}));return card;}));
 }
 function download(content,type,name){const url=URL.createObjectURL(new Blob([content],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
 function time(n){return [Math.floor(n/3600),Math.floor(n%3600/60),n%60].map(v=>String(v).padStart(2,'0')).join(':')+',000';}
@@ -28,7 +30,7 @@ async function init(){
  $('renderLimit').textContent=`Exportação até ${capabilities.maxDuration/60} minutos por trabalho. Áudio até ${Math.floor(capabilities.maxUploadBytes/1024/1024)} MB. Requer FFmpeg no servidor.`;
  $('renderVideo').disabled=!capabilities.storyboardVideo;$('uploadAudio').disabled=!capabilities.ownNarration;
  if(!capabilities.storyboardVideo)status('Planejamento disponível. Instale FFmpeg e FFprobe para habilitar exportações.');
- await refreshJobs();await ecosystem.refresh();
+ await mediaLibrary.refresh(capabilities.imageLibrary);await refreshJobs();await ecosystem.refresh();
  }catch(error){errorText(error);}
 }
 $('login').onsubmit=async event=>{event.preventDefault();const button=event.submitter;button.disabled=true;try{await api('/api/login',post({password:$('password').value}));$('password').value='';await init();status('Estúdio desbloqueado.');}catch(error){errorText(error);}finally{button.disabled=false;}};
@@ -40,7 +42,7 @@ $('uploadAudio').onclick=async()=>{
 $('clearAudio').onclick=async()=>{try{if(uploadedAudio)await api('/api/audio/'+uploadedAudio.id,{method:'DELETE'});uploadedAudio=null;$('audioFile').value='';$('audioStatus').textContent='Sem áudio: o MP4 será silencioso.';}catch(error){errorText(error);}};
 $('renderVideo').onclick=async()=>{
  if(!project)return;const button=$('renderVideo');button.disabled=true;
- const input={title:project.title,script:project.scenes.map(s=>s.narration).join(' '),region:project.region,format:project.format,visualPrompts:project.scenes.map(s=>s.visualPrompt),audioId:uploadedAudio?.id};
+ const input={title:project.title,script:project.scenes.map(s=>s.narration).join(' '),region:project.region,format:project.format,visualPrompts:project.scenes.map(s=>s.visualPrompt),sceneImageIds:project.scenes.map(s=>s.imageAssetId??null),audioId:uploadedAudio?.id};
  const signature=JSON.stringify(input);if(renderAttempt?.signature!==signature)renderAttempt={signature,key:crypto.randomUUID()};
  try{const job=await api('/api/jobs',{...post(input),headers:{'Content-Type':'application/json','Idempotency-Key':renderAttempt.key}});status('Exportação '+job.id.slice(0,8)+' · acompanhe abaixo.');await refreshJobs();}catch(error){errorText(error);}finally{button.disabled=false;}
 };
@@ -48,7 +50,7 @@ const states={queued:'Na fila',running:'Renderizando',succeeded:'Pronto para bai
 async function refreshJobs(){
  clearTimeout(pollTimer);const jobs=await api('/api/jobs');$('jobs').replaceChildren(...jobs.map(job=>{
  const article=document.createElement('article'),h=document.createElement('h3'),p=document.createElement('p'),actions=document.createElement('div');h.textContent=`Exportação ${job.id.slice(0,8)}`;p.className='job-status';p.textContent=states[job.status]??job.status;actions.className='actions';article.append(h,p);
- if(job.result){const details=document.createElement('p');details.textContent=`${job.result.width} × ${job.result.height} · ${Math.round(job.result.duration)}s · ${job.result.hasAudio?'com narração':'sem áudio'} · storyboard`;article.append(details);}
+ if(job.result){const details=document.createElement('p');details.textContent=`${job.result.width} × ${job.result.height} · ${Math.round(job.result.duration)}s · ${job.result.hasAudio?'com narração':'sem áudio'} · ${job.result.kind==='image-storyboard'?'storyboard com imagens':'storyboard textual'}`;article.append(details);}
  if(job.error){const message=document.createElement('p');message.textContent=job.error;article.append(message);}
  if(job.status==='succeeded'){const a=document.createElement('a');a.href='/api/jobs/'+job.id+'/file';a.className='job-download';a.textContent='Baixar MP4';actions.append(a);}
  if(['failed','cancelled'].includes(job.status)){const retry=document.createElement('button');retry.className='secondary';retry.textContent='Tentar novamente';retry.onclick=async()=>{retry.disabled=true;try{await api('/api/jobs/'+job.id+'/retry',{method:'POST'});await refreshJobs();}catch(error){errorText(error);retry.disabled=false;}};actions.append(retry);}
@@ -57,5 +59,6 @@ async function refreshJobs(){
  if(jobs.some(j=>['queued','running'].includes(j.status)))pollTimer=setTimeout(()=>refreshJobs().catch(errorText),2000);
 }
 $('refreshJobs').onclick=()=>refreshJobs().catch(errorText);
-const ecosystem=setupEcosystem({api,post,getProject:()=>project,status,openCut:async cut=>{const p=await api('/api/plan',post(cut));project=p;$('title').value=p.title;$('script').value=cut.script;$('region').value=p.region;$('format').value=p.format;$('script').oninput();show();try{await save(p);}catch{}$('result').scrollIntoView({behavior:'smooth'});}});
+const mediaLibrary=setupMediaLibrary({api,getProject:()=>project,status});
+const ecosystem=setupEcosystem({api,post,getProject:()=>project,status,openCut:async cut=>{const p=await api('/api/plan',post(cut));if(cut.sceneImageIds?.length===p.scenes.length)p.scenes.forEach((s,i)=>{if(cut.sceneImageIds[i])s.imageAssetId=cut.sceneImageIds[i];});project=p;$('title').value=p.title;$('script').value=cut.script;$('region').value=p.region;$('format').value=p.format;$('script').oninput();show();try{await save(p);}catch{}$('result').scrollIntoView({behavior:'smooth'});}});
 await init();

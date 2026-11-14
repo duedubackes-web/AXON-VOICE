@@ -40,3 +40,16 @@ Os tempos de legenda são estimados. Metadados de resultado contêm `kind: story
 | POST | /api/campaigns/:id/cut | `{cutId}`; retorna roteiro vertical com referência às cenas |
 
 PUT exige a revisão atual e a lista completa de posts com plataforma, título e texto. Qualquer edição invalida a aprovação. Até 100 campanhas por estúdio; exclusão disponível na interface. Alterações na marca não modificam campanhas existentes. Não há scheduler nem publicação direta. A aprovação desta API é a revisão do produto, independente de permissões para operações externas realizadas pelo assistente.
+
+## Biblioteca de imagens 0.4
+
+| Método | Rota | Uso |
+| --- | --- | --- |
+| GET | /api/assets | Lista de imagens e metadados públicos do estúdio |
+| POST | /api/assets | Corpo binário, `X-Axon-Consent: own-or-licensed` e título UTF-8 escapado por encodeURIComponent em `X-Axon-Name` |
+| GET | /api/assets/:id/file | Imagem PNG normalizada, com autenticação do estúdio |
+| DELETE | /api/assets/:id | Excluir se não houver referência em campanhas/exportações |
+
+POST `/api/jobs` e `/api/campaigns` aceitam `sceneImageIds`, uma lista com um UUID por cena ou `null` para fundo gráfico. A quantidade deve corresponder ao plano reconstruído. Os IDs precisam existir na biblioteca. POST `/api/campaigns/:id/cut` devolve os IDs de imagens correspondentes às cenas desse corte.
+
+`GET /api/capabilities` informa `imageLibrary` e `maxImageBytes`. Limites e comportamento: [biblioteca de mídia](MEDIA_LIBRARY.md).

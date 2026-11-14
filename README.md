@@ -1,6 +1,6 @@
 # AXON VOICE
 
-Estúdio audiovisual em português. MVP 0.3: roteiro → cenas → storyboard MP4 → campanha multirrede, com marca reutilizável e saída para automação.
+Estúdio audiovisual em português. MVP 0.4: roteiro → cenas com imagens próprias → storyboard MP4 → campanha multirrede, com marca reutilizável e saída para automação.
 
 ## Abrir no Codespaces
 
@@ -29,9 +29,12 @@ O servidor escuta apenas em loopback por padrão. Para um contêiner/reverse pro
 - Revisões, aprovação e exportação JSON/CSV.
 - Saída HTTPS assinada para n8n/workflows configurados, com registro e deduplicação por revisão.
 
+- Biblioteca persistente de imagens PNG/JPEG/WebP, com direitos declarados e deduplicação.
+- Imagem por cena no MP4, preservada nos roteiros de cortes e campanhas.
+
 ## Limites desta entrega
 
-MP4 é um **storyboard textual**, não uma cena gerada por IA. Direções visuais são preservadas no plano e não geram imagens. Sem áudio enviado, o vídeo é silencioso. Com áudio, tempos das legendas são distribuídos proporcionalmente pela duração, sem transcrição/alinhamento real. A síntese opcional do navegador serve apenas para prévia; não é exportada.
+MP4 é um **storyboard com imagens estáticas escolhidas pelo usuário ou fundo gráfico**, não uma cena gerada por IA. Direções visuais são preservadas no plano e não geram imagens. Sem áudio enviado, o vídeo é silencioso. Com áudio, tempos das legendas são distribuídos proporcionalmente pela duração, sem transcrição/alinhamento real. A síntese opcional do navegador serve apenas para prévia; não é exportada.
 
 Não há postagem direta nas redes, agendamento ou métricas sociais conectadas. O webhook entrega pacotes para revisão; resposta 2xx não comprova publicação. Metricool e Runway, quando conectados no ChatGPT, são ferramentas externas e não entregam automaticamente credenciais ao AXON.
 
@@ -46,3 +49,5 @@ Trabalhos/áudios ficam em `.data/` (ou `AXON_DATA_DIR`), fora do Git, e precisa
 Veja [base do produto](docs/MVP.md), [pesquisa](docs/RESEARCH.md), [API](docs/API.md) e [próximas entregas](docs/ROADMAP.md).
 
 Consulte o [ecossistema](docs/ECOSYSTEM.md) e a [configuração de automação](docs/AUTOMATION.md).
+
+Veja a [biblioteca e composição por cena](docs/MEDIA_LIBRARY.md).

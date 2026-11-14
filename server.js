@@ -11,7 +11,9 @@ import {createAccess} from './src/access.js';
 import {CampaignStore} from './src/campaigns.js';
 import {createAutomation} from './src/integrations.js';
 import {ecosystemRoutes} from './src/ecosystem-routes.js';
-const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/ecosystem.js':['ecosystem.js','text/javascript']};
+import {AssetStore,assignImages} from './src/assets.js';
+import {assetRoutes} from './src/asset-routes.js';
+const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/ecosystem.js':['ecosystem.js','text/javascript'],'/media-library.js':['media-library.js','text/javascript']};
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function body(req,max=260000){let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>max)throw fail(413,'Arquivo acima do limite permitido.');chunks.push(chunk);}return Buffer.concat(chunks);}
 async function json(req){if(!req.headers['content-type']?.startsWith('application/json'))throw fail(415,'Envie JSON.');try{return JSON.parse((await body(req)).toString('utf8'));}catch(e){if(e.status)throw e;throw fail(400,'JSON inválido.');}}
@@ -19,8 +21,8 @@ export function makeServer(options={}){
  const dataDir=resolve(options.dataDir??(process.env.AXON_DATA_DIR||fileURLToPath(new URL('./.data',import.meta.url))));
  const maxDuration=options.maxDuration??600;
  const access=createAccess({password:options.password??process.env.AXON_STUDIO_PASSWORD??'',publicOrigin:options.publicOrigin??process.env.AXON_PUBLIC_ORIGIN??''});
- let queue,available=false;const campaigns=new CampaignStore(join(dataDir,'ecosystem'));const automation=options.automation??createAutomation();
- const ready=(async()=>{available=await mediaAvailable();await campaigns.init();await mkdir(join(dataDir,'audio'),{recursive:true,mode:0o700});queue=await new JobQueue(join(dataDir,'jobs'),{maxDuration,...options.queueOptions}).init();})();
+ let queue,available=false;const assets=new AssetStore(join(dataDir,'assets'));const campaigns=new CampaignStore(join(dataDir,'ecosystem'));const automation=options.automation??createAutomation();
+ const ready=(async()=>{available=await mediaAvailable();await campaigns.init();await assets.init();await mkdir(join(dataDir,'audio'),{recursive:true,mode:0o700});queue=await new JobQueue(join(dataDir,'jobs'),{maxDuration,...options.queueOptions}).init();})();
  // Startup failures are reported by start(), and requests return a generic 500.
  ready.catch(()=>{});
  const server=createServer(async(req,res)=>{
@@ -33,8 +35,9 @@ export function makeServer(options={}){
    if(req.method==='POST'&&req.url==='/api/login'){if(!access.enabled)return send(200,{ok:true});const data=await json(req);const result=access.login(req,data.password);return send(result.status,{ok:result.status===200,error:result.error},'application/json',result.cookie?{'Set-Cookie':result.cookie}:{});}
    if(!access.valid(req))throw fail(401,'Desbloqueie o estúdio para continuar.');
    await ready;
-   if(await ecosystemRoutes({req,res,send,json,campaigns,automation}))return;
-   if(req.method==='GET'&&req.url==='/api/capabilities')return send(200,{regions,planning:true,aiVoice:false,aiVideo:false,storyboardVideo:available,ownNarration:available,campaigns:true,socialExports:true,automations:automation.configured,maxDuration,maxUploadBytes:20*1024*1024,storage:'browser-indexeddb-and-server-render-jobs',authentication:access.enabled?'single-studio-password':'local-only'});
+   if(await assetRoutes({req,send,body,assets,available,isReferenced:id=>[...queue.jobs.values()].some(j=>j.project.scenes.some(s=>s.imageAssetId===id))||[...campaigns.campaigns.values()].some(c=>c.source.scenes.some(s=>s.imageAssetId===id))}))return;
+   if(await ecosystemRoutes({req,res,send,json,campaigns,automation,assets}))return;
+   if(req.method==='GET'&&req.url==='/api/capabilities')return send(200,{regions,planning:true,aiVoice:false,aiVideo:false,storyboardVideo:available,ownNarration:available,campaigns:true,imageLibrary:available,maxImageBytes:12*1024*1024,socialExports:true,automations:automation.configured,maxDuration,maxUploadBytes:20*1024*1024,storage:'browser-indexeddb-and-server-render-jobs',authentication:access.enabled?'single-studio-password':'local-only'});
    if(req.method==='POST'&&req.url==='/api/plan'){try{return send(200,plan(await json(req)));}catch(e){throw e.status?e:fail(400,e.message);}}
    if(req.method==='GET'&&req.url==='/api/jobs')return send(200,queue.list());
    if(req.method==='POST'&&req.url==='/api/audio'){
@@ -56,20 +59,21 @@ export function makeServer(options={}){
     const key=req.headers['idempotency-key'];if(typeof key!=='string'||!/^[a-zA-Z0-9_-]{8,100}$/u.test(key))throw fail(400,'Informe uma chave de idempotência válida.');
     let audioPath,audioDuration;
     if(input.audioId){if(!validId(input.audioId))throw fail(400,'Áudio inválido.');try{const record=JSON.parse(await readFile(join(dataDir,'audio',input.audioId,'audio.json'),'utf8'));audioPath=join(dataDir,'audio',input.audioId,'audio.wav');await stat(audioPath);audioDuration=record.duration;}catch{throw fail(404,'Áudio não encontrado.');}}
-    try{return send(202,await queue.enqueue(project,{key,audioPath,audioDuration}));}catch(e){throw fail(409,e.message);}
+    assignImages(project,input.sceneImageIds);const sceneImages=assets.resolveScenes(project);
+    try{return send(202,await queue.enqueue(project,{key,audioPath,audioDuration,sceneImages}));}catch(e){throw fail(409,e.message);}
    }
    const match=req.url?.match(/^\/api\/jobs\/([0-9a-f-]+)(?:\/(file|cancel|retry))?$/u);
    if(match){const [,id,action]=match;if(!validId(id)||!queue.jobs.has(id))throw fail(404,'Trabalho não encontrado.');const job=queue.jobs.get(id);
     if(req.method==='GET'&&action==='file'){if(job.status!=='succeeded')throw fail(409,'Exportação ainda não está disponível.');const path=join(queue.root,id,'output.mp4');const info=await stat(path);res.writeHead(200,{...headers,'Content-Type':'video/mp4','Content-Length':info.size,'Content-Disposition':`attachment; filename="axon-${id}.mp4"`});const stream=createReadStream(path);stream.on('error',()=>res.destroy());res.on('close',()=>stream.destroy());return stream.pipe(res);}
     if(req.method==='GET'&&!action)return send(200,queue.public(job));
-    if(req.method==='POST'&&action==='retry'){if(!available)throw fail(503,'FFmpeg indisponível.');if(!['failed','cancelled'].includes(job.status))throw fail(409,'Somente trabalhos falhos ou cancelados podem ser repetidos.');if(job.audioPath){try{await stat(job.audioPath);}catch{throw fail(404,'O áudio original foi excluído. Carregue uma nova gravação.');}}try{return send(202,await queue.enqueue(job.project,{key:randomUUID(),audioPath:job.audioPath,audioDuration:job.audioDuration}));}catch(e){throw fail(409,e.message);}}
+    if(req.method==='POST'&&action==='retry'){if(!available)throw fail(503,'FFmpeg indisponível.');if(!['failed','cancelled'].includes(job.status))throw fail(409,'Somente trabalhos falhos ou cancelados podem ser repetidos.');if(job.audioPath){try{await stat(job.audioPath);}catch{throw fail(404,'O áudio original foi excluído. Carregue uma nova gravação.');}}try{return send(202,await queue.enqueue(job.project,{key:randomUUID(),audioPath:job.audioPath,audioDuration:job.audioDuration,sceneImages:job.sceneImages??[]}));}catch(e){throw fail(409,e.message);}}
     if(req.method==='POST'&&action==='cancel')return send(200,await queue.cancel(id));
     if(req.method==='DELETE'&&!action){try{await queue.remove(id);}catch(e){throw fail(409,e.message);}return send(200,{deleted:true});}
    }
    return send(404,{error:'Não encontrado.'});
   }catch(e){if(!res.headersSent)send(e.status??500,{error:e.status?e.message:'Não foi possível processar a solicitação.'});else res.destroy();}
  });
- server.ready=ready;server.shutdown=async()=>{await ready;await queue.close();await campaigns.chain;};return server;
+ server.ready=ready;server.shutdown=async()=>{await ready;await queue.close();await campaigns.chain;await assets.chain;};return server;
 }
 export async function start(){
  const host=process.env.HOST??'127.0.0.1';

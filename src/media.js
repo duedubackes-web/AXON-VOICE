@@ -39,19 +39,38 @@ export function captions(project,duration){
   for(const scene of project.scenes)ass+=`Dialogue: 0,${clock(scene.start*scale)},${clock((scene.start+scene.duration)*scale)},Main,,0,0,0,,${assText(scene.narration)}\n`;
   return ass;
 }
-export async function renderVideo(project,directory,{audioPath,audioDuration,signal,maxDuration=600}={}){
+export async function renderVideo(project,directory,{audioPath,audioDuration,sceneImages=[],signal,maxDuration=600}={}){
   const duration=audioDuration??project.duration;
   if(!Number.isFinite(duration)||duration<=0||duration>maxDuration)throw new Error('Duração acima do limite de renderização.');
   const [width,height]=dimensions[project.format];
   await writeFile(join(directory,'captions.ass'),captions(project,duration));
-  const args=['-nostdin','-hide_banner','-v','error','-y','-f','lavfi','-i',`color=c=0x101624:s=${width}x${height}:r=24:d=${duration}`];
+  const args=['-nostdin','-hide_banner','-v','error','-y'];
+  const hasImages=sceneImages.some(Boolean);
+  if(hasImages){
+    if(sceneImages.length!==project.scenes.length)throw new Error('Imagens não correspondem ao plano.');
+    const staged=new Map();let timeline='';
+    for(let i=0;i<project.scenes.length;i++){
+      if(signal?.aborted)throw new Error('Cancelled');
+      const source=sceneImages[i]??'fallback';let name=staged.get(source);
+      if(!name){name=`image-${staged.size}.png`;const stageArgs=['-nostdin','-v','error','-y'];
+       if(source==='fallback')stageArgs.push('-f','lavfi','-i',`color=c=0x101624:s=${width}x${height}`);
+       else stageArgs.push('-protocol_whitelist','file,pipe','-i',source);
+       stageArgs.push('-frames:v','1','-vf',`scale=${width}:${height}:force_original_aspect_ratio=decrease,pad=${width}:${height}:(ow-iw)/2:(oh-ih)/2:color=0x101624,setsar=1,format=rgb24`,'-threads','1',name);
+       await command('ffmpeg',stageArgs,{cwd:directory,signal,timeout:30000});staged.set(source,name);
+      }
+      timeline+=`file '${name}'\nduration ${(project.scenes[i].duration*duration/project.duration).toFixed(6)}\n`;
+    }
+    timeline+=`file '${staged.get(sceneImages.at(-1)??'fallback')}'\n`;
+    await writeFile(join(directory,'timeline.txt'),timeline);
+    args.push('-f','concat','-safe','1','-protocol_whitelist','file,pipe','-i','timeline.txt');
+  }else args.push('-f','lavfi','-i',`color=c=0x101624:s=${width}x${height}:r=24:d=${duration}`);
   if(audioPath)args.push('-protocol_whitelist','file,pipe','-i',audioPath);
-  args.push('-vf',`drawbox=x=0:y=0:w=iw:h=12:color=0xaa91ff:t=fill,ass=filename=captions.ass`,'-map','0:v:0');
+  args.push('-vf',`fps=24,drawbox=x=0:y=0:w=iw:h=12:color=0xaa91ff:t=fill,ass=filename=captions.ass`,'-map','0:v:0');
   if(audioPath)args.push('-map','1:a:0','-c:a','aac','-b:a','128k');else args.push('-an');
   args.push('-t',String(duration),'-c:v','libx264','-preset','ultrafast','-crf','23','-pix_fmt','yuv420p','-threads','2','-movflags','+faststart','output.mp4');
   await command('ffmpeg',args,{cwd:directory,signal,timeout:Math.max(120000,duration*4000)});
   const target=join(directory,'output.mp4');const info=await probe(target);
   const video=info.streams?.find(s=>s.codec_type==='video');
   if(!video||video.width!==width||video.height!==height||Number(info.format?.duration)<duration-0.5)throw new Error('Arquivo exportado não passou na validação.');
-  return {duration:Number(info.format.duration),bytes:(await stat(target)).size,width,height,hasAudio:info.streams.some(s=>s.codec_type==='audio'),subtitleTiming:audioPath?'scaled-estimate':'estimated',kind:'storyboard'};
+  return {duration:Number(info.format.duration),bytes:(await stat(target)).size,width,height,hasAudio:info.streams.some(s=>s.codec_type==='audio'),subtitleTiming:audioPath?'scaled-estimate':'estimated',kind:hasImages?'image-storyboard':'storyboard',scenesWithImages:sceneImages.filter(Boolean).length};
 }

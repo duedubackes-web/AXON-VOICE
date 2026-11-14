@@ -1,4 +1,4 @@
-# Verificação — versões 0.2 e 0.3
+# Verificação — versões 0.2, 0.3 e 0.4
 
 Data: 14/11/2026.
 
@@ -27,3 +27,9 @@ O contêiner Codespaces está configurado, mas não foi construído neste ambien
 Verificações adicionais: campanha em cinco redes com links UTM distintos; cortes contíguos até 60s; cópia da identidade editorial; validação de marca/plataformas; proteção CSV contra fórmulas; aprovação por revisão; edição simultânea com rejeição de revisão antiga; persistência e recuperação da entrega; deduplicação de envio; envelope HMAC; bloqueio de redes privadas e de redirecionamentos; jornada HTTP de criação, edição, aprovação, exportação e entrega.
 
 Os testes de integração externa usam transporte controlado em teste. Não houve envio a n8n real, publicação em redes ou conexão a Metricool/Runway. Esses testes não equivalem à aprovação das APIs sociais nem à verificação da conta do usuário. Não foi repetida a tentativa visual bloqueada pelo isolamento entre navegador e servidor; a interface nova permanece sem QA visual.
+
+## Versão 0.4 — imagens por cena
+
+20 testes aprovados, nenhum ignorado. A suíte real carrega duas imagens com proporções diferentes, exporta um MP4 vertical e decodifica quadros antes/depois da troca de cena para verificar as cores esperadas. Também valida autorização declarada, deduplicação, recuperação da biblioteca, bloqueio de SVG/identificadores inválidos, proteção de imagens referenciadas e preservação dos IDs em campanhas/cortes.
+
+A interface nova continua sem QA visual neste ambiente. Metricool e Runway não disponibilizaram ferramentas nesta sessão e o catálogo reportou ambos como não instalados. Não houve ação externa nessas contas nem consumo pago. O CI remoto deve confirmar a suíte após o push.

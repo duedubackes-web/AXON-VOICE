@@ -3,6 +3,7 @@ import {join} from 'node:path';
 import {randomUUID} from 'node:crypto';
 import {atomicJSON,validId} from './jobs.js';
 import {plan} from './planner.js';
+import {assignImages} from './assets.js';
 export const platforms={
  youtube:{name:'YouTube',format:'16:9',captionBudget:1600},
  instagram:{name:'Instagram',format:'9:16',captionBudget:700},
@@ -25,7 +26,7 @@ const clip=(text,max)=>Array.from(text).slice(0,max).join('');
 export function trackedLink(website,platform,campaign){if(!website)return '';const url=new URL(website);url.searchParams.set('utm_source',platform);url.searchParams.set('utm_medium','social');url.searchParams.set('utm_campaign',campaign);return url.href;}
 export function suggestCuts(project,maxSeconds=60){
  const cuts=[];let group=[],duration=0;
- const flush=()=>{if(!group.length)return;cuts.push({id:`cut-${cuts.length+1}`,start:group[0].start,end:group.at(-1).start+group.at(-1).duration,duration,sceneIds:group.map(s=>s.id),script:group.map(s=>s.narration).join(' '),format:'9:16',reason:'Agrupamento por duração e limites de cena; revise o contexto antes de publicar.'});group=[];duration=0;};
+ const flush=()=>{if(!group.length)return;cuts.push({id:`cut-${cuts.length+1}`,start:group[0].start,end:group.at(-1).start+group.at(-1).duration,duration,sceneIds:group.map(s=>s.id),sceneImageIds:group.map(s=>s.imageAssetId??null),script:group.map(s=>s.narration).join(' '),format:'9:16',reason:'Agrupamento por duração e limites de cena; revise o contexto antes de publicar.'});group=[];duration=0;};
  for(const scene of project.scenes){if(duration+scene.duration>maxSeconds)flush();group.push(scene);duration+=scene.duration;}flush();return cuts.slice(0,12);
 }
 export function campaignWarnings(campaign){
@@ -34,7 +35,7 @@ export function campaignWarnings(campaign){
 }
 export function createCampaign(input,brand){
  if(!input||!Array.isArray(input.platforms)||!input.platforms.length||input.platforms.length>5||new Set(input.platforms).size!==input.platforms.length||input.platforms.some(id=>!Object.hasOwn(platforms,id)))throw error('Selecione plataformas válidas.');
- let project;try{project=plan(input);}catch(e){throw error(e.message);}if(input.visualPrompts!==undefined){if(!Array.isArray(input.visualPrompts)||input.visualPrompts.length!==project.scenes.length||input.visualPrompts.some(v=>typeof v!=='string'||v.length>2000))throw error('Direções visuais inválidas.');project.scenes.forEach((s,i)=>s.visualPrompt=input.visualPrompts[i]);}const id=randomUUID();const script=project.scenes.map(s=>s.narration).join(' ');
+ let project;try{project=plan(input);}catch(e){throw error(e.message);}if(input.visualPrompts!==undefined){if(!Array.isArray(input.visualPrompts)||input.visualPrompts.length!==project.scenes.length||input.visualPrompts.some(v=>typeof v!=='string'||v.length>2000))throw error('Direções visuais inválidas.');project.scenes.forEach((s,i)=>s.visualPrompt=input.visualPrompts[i]);}assignImages(project,input.sceneImageIds);const id=randomUUID();const script=project.scenes.map(s=>s.narration).join(' ');
  const campaign={id,schemaVersion:1,revision:1,title:project.title,createdAt:new Date().toISOString(),status:'draft',brand:structuredClone(brand),source:project,cuts:suggestCuts(project),posts:input.platforms.map(platform=>{
   const spec=platforms[platform],url=trackedLink(brand.website,platform,id),hashtags=brand.hashtags.slice(0,5).map(t=>'#'+t).join(' ');
   const tail=[brand.cta,url,hashtags].filter(Boolean).join('\n');

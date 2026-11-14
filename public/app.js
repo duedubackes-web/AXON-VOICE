@@ -1,3 +1,4 @@
+import {setupEcosystem} from '/ecosystem.js';
 const $=id=>document.getElementById(id);
 let project;
 const db=new Promise((resolve,reject)=>{const r=indexedDB.open('axon-studio',1);r.onupgradeneeded=()=>r.result.createObjectStore('projects');r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
@@ -27,7 +28,7 @@ async function init(){
  $('renderLimit').textContent=`Exportação até ${capabilities.maxDuration/60} minutos por trabalho. Áudio até ${Math.floor(capabilities.maxUploadBytes/1024/1024)} MB. Requer FFmpeg no servidor.`;
  $('renderVideo').disabled=!capabilities.storyboardVideo;$('uploadAudio').disabled=!capabilities.ownNarration;
  if(!capabilities.storyboardVideo)status('Planejamento disponível. Instale FFmpeg e FFprobe para habilitar exportações.');
- await refreshJobs();
+ await refreshJobs();await ecosystem.refresh();
  }catch(error){errorText(error);}
 }
 $('login').onsubmit=async event=>{event.preventDefault();const button=event.submitter;button.disabled=true;try{await api('/api/login',post({password:$('password').value}));$('password').value='';await init();status('Estúdio desbloqueado.');}catch(error){errorText(error);}finally{button.disabled=false;}};
@@ -56,4 +57,5 @@ async function refreshJobs(){
  if(jobs.some(j=>['queued','running'].includes(j.status)))pollTimer=setTimeout(()=>refreshJobs().catch(errorText),2000);
 }
 $('refreshJobs').onclick=()=>refreshJobs().catch(errorText);
+const ecosystem=setupEcosystem({api,post,getProject:()=>project,status,openCut:async cut=>{const p=await api('/api/plan',post(cut));project=p;$('title').value=p.title;$('script').value=cut.script;$('region').value=p.region;$('format').value=p.format;$('script').oninput();show();try{await save(p);}catch{}$('result').scrollIntoView({behavior:'smooth'});}});
 await init();

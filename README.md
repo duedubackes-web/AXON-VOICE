@@ -1,6 +1,6 @@
 # AXON VOICE
 
-Estúdio audiovisual em português. MVP 0.2: roteiro → cenas → direção visual → storyboard MP4, com narração própria opcional.
+Estúdio audiovisual em português. MVP 0.3: roteiro → cenas → storyboard MP4 → campanha multirrede, com marca reutilizável e saída para automação.
 
 ## Abrir no Codespaces
 
@@ -23,9 +23,17 @@ O servidor escuta apenas em loopback por padrão. Para um contêiner/reverse pro
 - Chave de idempotência evita renderização duplicada da mesma solicitação.
 - Estúdio privado com senha, sessão HttpOnly de 8 horas, limite de tentativas e validação de origem.
 
+- Identidade editorial persistente: marca, público, tom, CTA, pronúncia e termos a evitar.
+- Campanhas para YouTube, Instagram, TikTok, LinkedIn e WhatsApp, com textos editáveis e links UTM.
+- Até 12 sugestões de cortes verticais de até 60s, com rastreabilidade para o roteiro original.
+- Revisões, aprovação e exportação JSON/CSV.
+- Saída HTTPS assinada para n8n/workflows configurados, com registro e deduplicação por revisão.
+
 ## Limites desta entrega
 
 MP4 é um **storyboard textual**, não uma cena gerada por IA. Direções visuais são preservadas no plano e não geram imagens. Sem áudio enviado, o vídeo é silencioso. Com áudio, tempos das legendas são distribuídos proporcionalmente pela duração, sem transcrição/alinhamento real. A síntese opcional do navegador serve apenas para prévia; não é exportada.
+
+Não há postagem direta nas redes, agendamento ou métricas sociais conectadas. O webhook entrega pacotes para revisão; resposta 2xx não comprova publicação. Metricool e Runway, quando conectados no ChatGPT, são ferramentas externas e não entregam automaticamente credenciais ao AXON.
 
 Não há geração de voz/vídeo por IA, treinamento de sotaques, clonagem, integração privada com concorrentes, login multiusuário ou armazenamento gerenciado em nuvem. Senha protege um único estúdio compartilhado; não oferece contas isoladas. Reiniciar invalida sessões. Não expor como SaaS multiusuário.
 
@@ -36,3 +44,5 @@ Trabalhos/áudios ficam em `.data/` (ou `AXON_DATA_DIR`), fora do Git, e precisa
 `npm run check` e `npm test`. Testes de mídia usam FFmpeg real, incluem proporções diferentes, faixa de áudio e storyboard acima de um minuto. Quando FFmpeg está ausente, a suíte de mídia é marcada como ignorada e a UI desabilita a exportação. CI instala os requisitos e executa a suíte completa.
 
 Veja [base do produto](docs/MVP.md), [pesquisa](docs/RESEARCH.md), [API](docs/API.md) e [próximas entregas](docs/ROADMAP.md).
+
+Consulte o [ecossistema](docs/ECOSYSTEM.md) e a [configuração de automação](docs/AUTOMATION.md).

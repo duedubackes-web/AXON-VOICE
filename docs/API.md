@@ -23,3 +23,20 @@ Estados: queued → running → succeeded/failed/cancelled. Solicitações idên
 FFmpeg é executado sem shell e com argumentos fixos; entrada de usuário fica nos arquivos de legenda. ASS remove chaves, barras invertidas e caracteres de controle para impedir comandos de estilo. Uploads aceitam somente demuxers de áudio/contêineres conhecidos e proíbem protocolos de rede. Diretórios usam UUIDs validados. Processos têm tempo limite e podem ser cancelados.
 
 Os tempos de legenda são estimados. Metadados de resultado contêm `kind: storyboard`, `hasAudio` e `subtitleTiming`. `aiVoice` e `aiVideo` continuam false. FFmpeg e bibliotecas devem ser atualizados no ambiente de execução.
+
+## Ecossistema 0.3
+
+| Método | Rota | Uso |
+| --- | --- | --- |
+| GET | /api/integrations | Estados reais; sem segredos/URL do destino |
+| GET | /api/platforms | Perfis editoriais das cinco redes |
+| GET / PUT | /api/brand | Consultar/salvar identidade editorial |
+| GET / POST | /api/campaigns | Histórico/criação a partir de `{title,script,region,format,platforms,visualPrompts?}` |
+| GET / PUT / DELETE | /api/campaigns/:id | Consultar, editar textos por revisão ou excluir |
+| POST | /api/campaigns/:id/approve | `{revision,confirm:"reviewed-content-and-rights"}` |
+| POST | /api/campaigns/:id/dispatch | `{revision,confirm:"send-reviewed-campaign"}`; somente com configuração externa |
+| GET | /api/campaigns/:id/json | Exportar pacote, inclusive rascunhos |
+| GET | /api/campaigns/:id/csv | Exportar textos com proteção contra fórmulas |
+| POST | /api/campaigns/:id/cut | `{cutId}`; retorna roteiro vertical com referência às cenas |
+
+PUT exige a revisão atual e a lista completa de posts com plataforma, título e texto. Qualquer edição invalida a aprovação. Até 100 campanhas por estúdio; exclusão disponível na interface. Alterações na marca não modificam campanhas existentes. Não há scheduler nem publicação direta. A aprovação desta API é a revisão do produto, independente de permissões para operações externas realizadas pelo assistente.

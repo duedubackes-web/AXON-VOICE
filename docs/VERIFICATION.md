@@ -1,4 +1,4 @@
-# Verificação — versão 0.2
+# Verificação — versões 0.2 e 0.3
 
 Data: 14/11/2026.
 
@@ -19,3 +19,11 @@ História testada: roteiro e narração autorizada → API de upload → áudio 
 A abertura no navegador de revisão retornou `ERR_CONNECTION_REFUSED` para o servidor local deste ambiente. A interface não recebeu validação visual/interativa; não se afirma aprovação visual. As verificações HTTP e de arquivos ocorreram dentro do runtime do projeto. O servidor iniciou na porta 3000 sem erro.
 
 O contêiner Codespaces está configurado, mas não foi construído neste ambiente. O CI remoto precisa confirmar seu próprio resultado após o push. Credenciais de voz/vídeo por IA não estão configuradas; nenhum teste real desses provedores foi realizado.
+
+## Versão 0.3 — ecossistema
+
+`npm run check` aprovado e `npm test` com 17 testes aprovados, nenhum ignorado neste ambiente.
+
+Verificações adicionais: campanha em cinco redes com links UTM distintos; cortes contíguos até 60s; cópia da identidade editorial; validação de marca/plataformas; proteção CSV contra fórmulas; aprovação por revisão; edição simultânea com rejeição de revisão antiga; persistência e recuperação da entrega; deduplicação de envio; envelope HMAC; bloqueio de redes privadas e de redirecionamentos; jornada HTTP de criação, edição, aprovação, exportação e entrega.
+
+Os testes de integração externa usam transporte controlado em teste. Não houve envio a n8n real, publicação em redes ou conexão a Metricool/Runway. Esses testes não equivalem à aprovação das APIs sociais nem à verificação da conta do usuário. Não foi repetida a tentativa visual bloqueada pelo isolamento entre navegador e servidor; a interface nova permanece sem QA visual.

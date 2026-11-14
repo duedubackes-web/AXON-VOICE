@@ -1,6 +1,6 @@
 {
   "name": "axon-voice",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -10,6 +10,6 @@
     "dev": "node server.js",
     "start": "node server.js",
     "test": "node --test",
-    "check": "node --check server.js && node --check public/app.js && node --check src/planner.js && node --check src/media.js && node --check src/jobs.js && node --check src/access.js"
+    "check": "node scripts/check.js"
   }
 }

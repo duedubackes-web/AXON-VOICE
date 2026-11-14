@@ -4,6 +4,10 @@
 
 Storyboard MP4 real com áudio próprio opcional; fila em disco, idempotência, cancelamento, download validado, proteção por senha para estúdio único e testes reais de mídia.
 
+## Concluído na versão 0.3
+
+Identidade editorial persistente, campanhas para cinco redes, links UTM, cortes rastreáveis, revisão/aprovação, exportação JSON/CSV, catálogo com estados reais e adaptador HTTPS assinado para automações. Conexões e envios externos ainda exigem configuração e autorização.
+
 ## Próximos marcos
 
 1. **Voz por IA:** acesso a uma conta/API de voz, seleção de voz autorizada, chave guardada no servidor, orçamento por solicitação, download WAV/MP3 e falhas recuperáveis. Pendente: credencial de provedor. Nenhuma cobrança/API externa foi realizada.

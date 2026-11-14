@@ -1,12 +1,12 @@
-# Base do MVP — versão 0.2, 14/11/2026
+# Base do MVP — versão 0.3, 14/11/2026
 
 ## Produto
 
-Público inicial: criadores brasileiros que querem transformar um roteiro em narração e vídeo, reaproveitando a história em formatos longos e curtos. A versão 0.2 oferece planejamento e renderização de storyboard textual em MP4, com áudio próprio opcional. A proposta comercial completa depende das próximas integrações.
+Público inicial: criadores brasileiros que querem transformar um roteiro em narração e vídeo, reaproveitando a história em formatos longos e curtos. A versão 0.3 reúne planejamento, renderização de storyboard textual em MP4 com áudio próprio opcional, identidade editorial, campanhas multirrede e entrega controlada para automações. A proposta comercial completa depende das próximas integrações.
 
 ## Arquitetura atual
 
-Frontend HTML/CSS/JS sem dependências; API Node HTTP; núcleo puro de planejamento; último projeto em IndexedDB, fila de renderização em disco e worker FFmpeg local. Exportação aberta com schemaVersion. O servidor persiste o plano de cada renderização em diretório privado fora do Git e não registra o conteúdo em logs. APIs não realizam chamadas pagas.
+Frontend HTML/CSS/JS sem dependências; API Node HTTP; núcleo puro de planejamento; último projeto em IndexedDB, fila de renderização em disco, worker FFmpeg local, campanhas versionadas e adaptador HTTPS assinado. Exportação aberta com schemaVersion. O servidor persiste o plano de cada renderização em diretório privado fora do Git e não registra o conteúdo em logs. APIs não realizam chamadas pagas.
 
 Contrato do projeto: título, proporção, perfil regional, direção de voz, duração estimada e cenas com identificador, início, duração, narração, direção visual e estado. `renderStatus: not-configured` no plano indica ausência de geração por IA. O estado da exportação MP4 pertence ao job e só muda para succeeded após verificação do arquivo.
 

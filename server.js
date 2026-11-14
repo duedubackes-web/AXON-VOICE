@@ -8,7 +8,10 @@ import {plan,regions} from './src/planner.js';
 import {JobQueue,validId,atomicJSON} from './src/jobs.js';
 import {mediaAvailable,normalizeAudio} from './src/media.js';
 import {createAccess} from './src/access.js';
-const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css']};
+import {CampaignStore} from './src/campaigns.js';
+import {createAutomation} from './src/integrations.js';
+import {ecosystemRoutes} from './src/ecosystem-routes.js';
+const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/ecosystem.js':['ecosystem.js','text/javascript']};
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function body(req,max=260000){let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>max)throw fail(413,'Arquivo acima do limite permitido.');chunks.push(chunk);}return Buffer.concat(chunks);}
 async function json(req){if(!req.headers['content-type']?.startsWith('application/json'))throw fail(415,'Envie JSON.');try{return JSON.parse((await body(req)).toString('utf8'));}catch(e){if(e.status)throw e;throw fail(400,'JSON inválido.');}}
@@ -16,8 +19,8 @@ export function makeServer(options={}){
  const dataDir=resolve(options.dataDir??(process.env.AXON_DATA_DIR||fileURLToPath(new URL('./.data',import.meta.url))));
  const maxDuration=options.maxDuration??600;
  const access=createAccess({password:options.password??process.env.AXON_STUDIO_PASSWORD??'',publicOrigin:options.publicOrigin??process.env.AXON_PUBLIC_ORIGIN??''});
- let queue,available=false;
- const ready=(async()=>{available=await mediaAvailable();await mkdir(join(dataDir,'audio'),{recursive:true,mode:0o700});queue=await new JobQueue(join(dataDir,'jobs'),{maxDuration,...options.queueOptions}).init();})();
+ let queue,available=false;const campaigns=new CampaignStore(join(dataDir,'ecosystem'));const automation=options.automation??createAutomation();
+ const ready=(async()=>{available=await mediaAvailable();await campaigns.init();await mkdir(join(dataDir,'audio'),{recursive:true,mode:0o700});queue=await new JobQueue(join(dataDir,'jobs'),{maxDuration,...options.queueOptions}).init();})();
  // Startup failures are reported by start(), and requests return a generic 500.
  ready.catch(()=>{});
  const server=createServer(async(req,res)=>{
@@ -30,7 +33,8 @@ export function makeServer(options={}){
    if(req.method==='POST'&&req.url==='/api/login'){if(!access.enabled)return send(200,{ok:true});const data=await json(req);const result=access.login(req,data.password);return send(result.status,{ok:result.status===200,error:result.error},'application/json',result.cookie?{'Set-Cookie':result.cookie}:{});}
    if(!access.valid(req))throw fail(401,'Desbloqueie o estúdio para continuar.');
    await ready;
-   if(req.method==='GET'&&req.url==='/api/capabilities')return send(200,{regions,planning:true,aiVoice:false,aiVideo:false,storyboardVideo:available,ownNarration:available,maxDuration,maxUploadBytes:20*1024*1024,storage:'browser-indexeddb-and-server-render-jobs',authentication:access.enabled?'single-studio-password':'local-only'});
+   if(await ecosystemRoutes({req,res,send,json,campaigns,automation}))return;
+   if(req.method==='GET'&&req.url==='/api/capabilities')return send(200,{regions,planning:true,aiVoice:false,aiVideo:false,storyboardVideo:available,ownNarration:available,campaigns:true,socialExports:true,automations:automation.configured,maxDuration,maxUploadBytes:20*1024*1024,storage:'browser-indexeddb-and-server-render-jobs',authentication:access.enabled?'single-studio-password':'local-only'});
    if(req.method==='POST'&&req.url==='/api/plan'){try{return send(200,plan(await json(req)));}catch(e){throw e.status?e:fail(400,e.message);}}
    if(req.method==='GET'&&req.url==='/api/jobs')return send(200,queue.list());
    if(req.method==='POST'&&req.url==='/api/audio'){
@@ -65,7 +69,7 @@ export function makeServer(options={}){
    return send(404,{error:'Não encontrado.'});
   }catch(e){if(!res.headersSent)send(e.status??500,{error:e.status?e.message:'Não foi possível processar a solicitação.'});else res.destroy();}
  });
- server.ready=ready;server.shutdown=async()=>{await ready;await queue.close();};return server;
+ server.ready=ready;server.shutdown=async()=>{await ready;await queue.close();await campaigns.chain;};return server;
 }
 export async function start(){
  const host=process.env.HOST??'127.0.0.1';

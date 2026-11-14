@@ -1,0 +1,28 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {mkdtemp,rm} from 'node:fs/promises';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {makeServer} from '../server.js';
+import {defaultBrand} from '../src/campaigns.js';
+test('HTTP ecosystem creates, edits, approves, exports and hands off one revision without publishing',{timeout:30000},async t=>{
+ const root=await mkdtemp(join(tmpdir(),'axon-ecosystem-api-'));let delivered=0;
+ const automation={configured:true,status:()=>({id:'automation',status:'configured-not-verified'}),send:async event=>{delivered++;assert.equal(event.publicationRequested,false);assert.equal(event.brand.name,'AXON');return {accepted:true,status:202};}};
+ const server=makeServer({dataDir:root,automation});await server.ready;await new Promise(r=>server.listen(0,'127.0.0.1',r));
+ t.after(async()=>{await server.shutdown();await new Promise(r=>server.close(r));await rm(root,{recursive:true,force:true});});
+ const base=`http://127.0.0.1:${server.address().port}`,request=(path,value,method='POST')=>fetch(base+path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(value)});
+ assert.equal((await fetch(base+'/ecosystem.js')).status,200);
+ assert.equal((await(await fetch(base+'/api/integrations')).json()).automaticPublishing,false);
+ assert.equal((await request('/api/brand',{...defaultBrand,name:'AXON',website:'https://example.com/saiba-mais'},'PUT')).status,200);
+ const res=await request('/api/campaigns',{title:'Da ideia à criação',script:'Uma história original. Nossa marca tem voz.',platforms:['youtube','instagram','whatsapp'],visualPrompts:['Um estúdio iluminado.']});assert.equal(res.status,201);let c=await res.json();assert.equal(c.source.scenes[0].visualPrompt,'Um estúdio iluminado.');
+ assert.equal((await request(`/api/campaigns/${c.id}/dispatch`,{revision:1,confirm:'send-reviewed-campaign'})).status,409);
+ c=await(await request(`/api/campaigns/${c.id}/approve`,{revision:1,confirm:'reviewed-content-and-rights'})).json();assert.equal(c.status,'approved');
+ const edits={revision:1,posts:c.posts.map(p=>({...p,caption:'Texto revisado para esta rede.'}))};const concurrent=await Promise.all([request(`/api/campaigns/${c.id}`,edits,'PUT'),request(`/api/campaigns/${c.id}`,edits,'PUT')]);assert.deepEqual(concurrent.map(r=>r.status).sort(),[200,409]);
+ c=await(await fetch(base+`/api/campaigns/${c.id}`)).json();assert.equal(c.revision,2);assert.equal(c.approval,null);
+ assert.equal((await request(`/api/campaigns/${c.id}/approve`,{revision:2,confirm:'reviewed-content-and-rights'})).status,200);
+ for(let i=0;i<2;i++)assert.equal((await request(`/api/campaigns/${c.id}/dispatch`,{revision:2,confirm:'send-reviewed-campaign'})).status,200);assert.equal(delivered,1);
+ const exported=await fetch(base+`/api/campaigns/${c.id}/csv`);assert.match(exported.headers.get('content-type'),/text\/csv/);assert.match(await exported.text(),/Texto revisado/);
+ const json=await(await fetch(base+`/api/campaigns/${c.id}/json`)).json();assert.equal(json.deliveries[0].status,'delivered');
+ const cut=await(await request(`/api/campaigns/${c.id}/cut`,{cutId:'cut-1'})).json();assert.equal(cut.format,'9:16');assert.ok(cut.sourceSceneIds.length);assert.equal((await request('/api/plan',cut)).status,200);
+ assert.equal((await fetch(base+`/api/campaigns/${c.id}`,{method:'DELETE'})).status,200);assert.equal((await fetch(base+`/api/campaigns/${c.id}`)).status,404);
+});

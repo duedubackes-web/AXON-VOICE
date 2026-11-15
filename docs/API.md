@@ -59,3 +59,9 @@ POST `/api/jobs` e `/api/campaigns` aceitam `sceneImageIds`, uma lista com um UU
 O catálogo `/api/integrations` inclui `access.links`, orientações por etapa e o estado `external-status-not-monitored` para Metricool/Runway: o servidor AXON não monitora as conexões da conversa.
 
 GET `/api/campaigns/:id/brief/runway` e GET `/api/campaigns/:id/brief/metricool` baixam textos de trabalho da revisão persistida. Seguem a autenticação do estúdio e não enviam conteúdo ao provedor.
+
+## Organização 0.6
+
+GET `/api/workspace` retorna contagens reais e até cinco campanhas recentes, seguindo a autenticação do estúdio. GET `/guides/automation` exibe as instruções do adaptador como texto, sem segredos.
+
+`/overview`, `/studio`, `/library`, `/brand`, `/campaigns`, `/integrations` e `/exports` servem a aplicação e selecionam a respectiva área; não são endpoints de mutação.

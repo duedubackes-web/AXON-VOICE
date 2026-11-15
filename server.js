@@ -11,9 +11,11 @@ import {createAccess} from './src/access.js';
 import {CampaignStore} from './src/campaigns.js';
 import {createAutomation} from './src/integrations.js';
 import {ecosystemRoutes} from './src/ecosystem-routes.js';
+import {workspaceSummary} from './src/workspace.js';
 import {AssetStore,assignImages} from './src/assets.js';
 import {assetRoutes} from './src/asset-routes.js';
-const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/ecosystem.js':['ecosystem.js','text/javascript'],'/media-library.js':['media-library.js','text/javascript']};
+const appPaths=new Set(['/overview','/studio','/library','/brand','/campaigns','/integrations','/exports']);
+const files={'/':['index.html','text/html'],'/app.js':['app.js','text/javascript'],'/style.css':['style.css','text/css'],'/ecosystem.js':['ecosystem.js','text/javascript'],'/media-library.js':['media-library.js','text/javascript'],'/navigation.js':['navigation.js','text/javascript'],'/workspace.js':['workspace.js','text/javascript'],'/integration-hub.js':['integration-hub.js','text/javascript']};
 function fail(status,message){return Object.assign(new Error(message),{status});}
 async function body(req,max=260000){let size=0;const chunks=[];for await(const chunk of req){size+=chunk.length;if(size>max)throw fail(413,'Arquivo acima do limite permitido.');chunks.push(chunk);}return Buffer.concat(chunks);}
 async function json(req){if(!req.headers['content-type']?.startsWith('application/json'))throw fail(415,'Envie JSON.');try{return JSON.parse((await body(req)).toString('utf8'));}catch(e){if(e.status)throw e;throw fail(400,'JSON inválido.');}}
@@ -30,11 +32,13 @@ export function makeServer(options={}){
   const send=(status,data,type='application/json',extra={})=>{res.writeHead(status,{...headers,...extra,'Content-Type':type+'; charset=utf-8'});res.end(type==='application/json'?JSON.stringify(data):data);};
   try{
    if(!['GET','HEAD'].includes(req.method)&&!access.sameOrigin(req))throw fail(403,'Origem não permitida.');
-   if(req.method==='GET'&&files[req.url]){const [file,type]=files[req.url];return send(200,await readFile(fileURLToPath(new URL('./public/'+file,import.meta.url))),type);}
+   if(req.method==='GET'&&(files[req.url]||appPaths.has(req.url))){const [file,type]=files[req.url]??files['/'];return send(200,await readFile(fileURLToPath(new URL('./public/'+file,import.meta.url))),type);}
    if(req.method==='GET'&&req.url==='/api/session')return send(200,{locked:!access.valid(req),passwordRequired:access.enabled});
    if(req.method==='POST'&&req.url==='/api/login'){if(!access.enabled)return send(200,{ok:true});const data=await json(req);const result=access.login(req,data.password);return send(result.status,{ok:result.status===200,error:result.error},'application/json',result.cookie?{'Set-Cookie':result.cookie}:{});}
    if(!access.valid(req))throw fail(401,'Desbloqueie o estúdio para continuar.');
    await ready;
+   if(req.method==='GET'&&req.url==='/api/workspace')return send(200,workspaceSummary({jobs:queue,campaigns,assets,mediaAvailable:available}));
+   if(req.method==='GET'&&req.url==='/guides/automation')return send(200,await readFile(fileURLToPath(new URL('./docs/AUTOMATION.md',import.meta.url))),'text/plain');
    if(await assetRoutes({req,send,body,assets,available,isReferenced:id=>[...queue.jobs.values()].some(j=>j.project.scenes.some(s=>s.imageAssetId===id))||[...campaigns.campaigns.values()].some(c=>c.source.scenes.some(s=>s.imageAssetId===id))}))return;
    if(await ecosystemRoutes({req,res,send,json,campaigns,automation,assets}))return;
    if(req.method==='GET'&&req.url==='/api/capabilities')return send(200,{regions,planning:true,aiVoice:false,aiVideo:false,storyboardVideo:available,ownNarration:available,campaigns:true,imageLibrary:available,maxImageBytes:12*1024*1024,socialExports:true,automations:automation.configured,maxDuration,maxUploadBytes:20*1024*1024,storage:'browser-indexeddb-and-server-render-jobs',authentication:access.enabled?'single-studio-password':'local-only'});

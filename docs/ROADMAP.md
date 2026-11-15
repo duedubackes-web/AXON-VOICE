@@ -16,6 +16,10 @@ Biblioteca de imagens próprias/licenciadas, validação e normalização, dedup
 
 Central de acessos oficiais para cadastro, login, aplicativos móveis e autorização no ChatGPT, com briefs de campanha específicos para Runway/Metricool. Conexões da conversa verificadas: Metricool aguarda uma rede vinculada; Runway autenticado, com geração de vídeo limitada pelo plano. Esses acessos não são tokens de API do servidor AXON.
 
+## Concluído na versão 0.6
+
+Navegação em áreas separadas, visão geral com dados reais da instância, acesso direto ao centro em `/integrations`, busca/categorias e painéis recolhíveis. Abertura e fluxo de planejamento conferidos no navegador de revisão.
+
 ## Próximos marcos
 
 1. **Voz por IA:** acesso a uma conta/API de voz, seleção de voz autorizada, chave guardada no servidor, orçamento por solicitação, download WAV/MP3 e falhas recuperáveis. Pendente: credencial de provedor. Nenhuma cobrança/API externa foi realizada.

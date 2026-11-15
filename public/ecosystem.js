@@ -1,9 +1,10 @@
+import {setupIntegrationHub} from '/integration-hub.js';
 const $=id=>document.getElementById(id);
 const element=(tag,text,className)=>{const node=document.createElement(tag);if(text!==undefined)node.textContent=text;if(className)node.className=className;return node;};
 function action(text,fn){const b=element('button',text,'secondary');b.type='button';b.onclick=async()=>{b.disabled=true;try{await fn();}finally{b.disabled=false;}};return b;}
 const checks=text=>{const label=element('label',undefined,'consent'),input=document.createElement('input');input.type='checkbox';label.append(input,document.createTextNode(text));return {label,input};};
 export function setupEcosystem({api,post,getProject,status,openCut}){
- let platformSpecs={},catalog,dirty=false;
+ let platformSpecs={},catalog,dirty=false;const integrationHub=setupIntegrationHub({api,status});
  const safe=fn=>async()=>{try{await fn();}catch(error){status(error.message);}};
  const csvList=id=>$(id).value.split(',').map(t=>t.trim()).filter(Boolean);
  function brandFields(brand){for(const [id,key] of Object.entries({brandName:'name',brandAudience:'audience',brandTone:'tone',brandCta:'cta',brandWebsite:'website',brandPronunciation:'pronunciation'}))$(id).value=brand[key];$('brandTags').value=brand.hashtags.join(', ');$('brandAvoid').value=brand.avoid.join(', ');}
@@ -29,11 +30,9 @@ export function setupEcosystem({api,post,getProject,status,openCut}){
  $('brandForm').onsubmit=async event=>{event.preventDefault();const button=event.submitter;button.disabled=true;try{const brand=await api('/api/brand',{...post({name:$('brandName').value,audience:$('brandAudience').value,tone:$('brandTone').value,cta:$('brandCta').value,website:$('brandWebsite').value,hashtags:csvList('brandTags'),avoid:csvList('brandAvoid'),pronunciation:$('brandPronunciation').value}),method:'PUT'});brandFields(brand);status('Identidade salva para novas campanhas.');}catch(error){status(error.message);}finally{button.disabled=false;}};
  $('createCampaign').onclick=safe(async()=>{const project=getProject();if(!project)throw Error('Planeje um roteiro antes de criar a campanha.');const platforms=[...$('platformChoices').querySelectorAll('input:checked')].map(i=>i.value);const c=await api('/api/campaigns',post({title:project.title,script:project.scenes.map(s=>s.narration).join(' '),format:project.format,region:project.region,visualPrompts:project.scenes.map(s=>s.visualPrompt),sceneImageIds:project.scenes.map(s=>s.imageAssetId??null),platforms}));edit(c);await list();status('Campanha criada como rascunho. Revise os textos e os cortes.');});
  $('refreshCampaigns').onclick=safe(list);
- return {async refresh(){
+ return {async openCampaign(id){edit(await api('/api/campaigns/'+id));},async refresh(){
   const [brand,specs,integrations]=await Promise.all([api('/api/brand'),api('/api/platforms'),api('/api/integrations')]);platformSpecs=specs;catalog=integrations;brandFields(brand);
   $('platformChoices').replaceChildren(...Object.entries(specs).map(([id,spec])=>{const {label,input}=checks(spec.name);input.value=id;input.checked=true;return label;}));
-  const names={'not-configured':'Configuração necessária','configured-not-verified':'Configurado · conexão não validada','export-ready':'Pacote editorial disponível','external-connection-required':'Conexão externa necessária','external-status-not-monitored':'Conexão no ChatGPT: consulte na conversa'};
-  $('integrationList').replaceChildren(...integrations.integrations.map(i=>{const card=element('article');card.append(element('h3',i.name),element('p',names[i.status]??i.status,'job-status'),element('p',i.purpose,'hint'));
-   if(i.access){card.classList.add('provider-access');card.append(element('p',i.access.desktopNote,'hint'));const links=element('div',undefined,'provider-links');for(const entry of i.access.links){const a=element('a',entry.label,'provider-link');a.href=entry.url;a.target='_blank';a.rel='noopener noreferrer';links.append(a);}card.append(links);const steps=element('ol');for(const text of i.access.steps)steps.append(element('li',text));card.append(steps,element('p',i.access.nextAction,'hint'),element('p','A conexão no ChatGPT não é monitorada por esta página e não fornece automaticamente credenciais ao aplicativo AXON.','hint'));}return card;}));await list();
+  integrationHub.setCatalog(integrations);await list();
  }};
 }

@@ -1,4 +1,4 @@
-# Verificação — versões 0.2 a 0.5
+# Verificação — versões 0.2 a 0.6
 
 Data: 14/11/2026.
 
@@ -39,3 +39,13 @@ A interface nova continua sem QA visual neste ambiente. Metricool e Runway não 
 22 testes aprovados localmente, nenhum ignorado. Os testes novos verificam o catálogo de URLs HTTPS oficiais, briefs que preservam revisão/estado de rascunho e direções visuais, os downloads HTTP para ambos os provedores e a rejeição de um provedor desconhecido. A interface permanece sem QA visual neste ambiente.
 
 Conexões reais no ChatGPT: consulta de marcas do Metricool retornou ausência de redes vinculadas; whoami do Runway confirmou autenticação com plano Free e sem modelos de vídeo. A visualização de planos foi apresentada, sem compras. Esses resultados não representam testes de postagem, de geração de mídia nem integração de API do servidor AXON.
+
+## Versão 0.6 — organização e revisão visual (15/11/2026)
+
+25 testes aprovados, nenhum ignorado. Novas verificações cobrem rotas diretas, links antigos, busca sem acentos, categorias e contagens de campanhas persistidas. A sintaxe foi novamente verificada após os ajustes de mensagens/navegação.
+
+A barreira anterior de abertura local foi resolvida iniciando o servidor no próprio desktop de revisão com o runtime instalado. O centro abriu em `/integrations`; a busca por Runway exibiu uma integração, o filtro de criação/gestão exibiu Metricool e Runway, a visão geral carregou as contagens e o Estúdio planejou/salvou um roteiro demonstrativo pela interface. A captura está em `docs/screenshots/integrations-v0.6.jpg`.
+
+A checagem de logs não mostrou erro do aplicativo no fluxo revisado; os erros visíveis eram do script de extensão do navegador. Não foram testados todos os fluxos visuais, upload móvel ou acessibilidade em leitores de tela. A prévia local não é uma implantação pública.
+
+Metricool continua sem rede vinculada na consulta desta entrega; Runway autenticado sem modelos de vídeo disponíveis no workspace. Não houve publicação nem geração paga.

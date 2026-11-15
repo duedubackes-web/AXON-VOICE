@@ -1,8 +1,8 @@
-# Base do MVP — versão 0.5, 14/11/2026
+# Base do MVP — versão 0.6, 14/11/2026
 
 ## Produto
 
-Público inicial: criadores brasileiros que querem transformar um roteiro em narração e vídeo, reaproveitando a história em formatos longos e curtos. A versão 0.5 reúne planejamento, renderização de storyboard textual em MP4 com áudio próprio opcional e imagem por cena, identidade editorial, campanhas multirrede e entrega controlada para automações e acessos oficiais aos provedores. A proposta comercial completa depende das próximas integrações.
+Público inicial: criadores brasileiros que querem transformar um roteiro em narração e vídeo, reaproveitando a história em formatos longos e curtos. A versão 0.6 reúne planejamento, renderização de storyboard textual em MP4 com áudio próprio opcional e imagem por cena, identidade editorial, campanhas multirrede e entrega controlada para automações e acessos oficiais aos provedores. A proposta comercial completa depende das próximas integrações.
 
 ## Arquitetura atual
 
